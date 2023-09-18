@@ -1,0 +1,25 @@
+version: "3"
+services:
+  web:
+    build: ./opt
+    container_name: "practice-rust"
+    tty: true
+    volumes:
+      - ./opt:/usr/src/myapp
+    ports:
+      - "8080:8080"
+  frontend:
+    build: ./frontend
+    container_name: "frontend-rust"
+    volumes:
+      - ./frontend:/usr/src/app
+    ports:
+      - "3000:3000"
+    tty: true
+
+  ngix:
+    build: ./ngix
+    ports:
+      - "80:80"
+    volumes:
+      - ./ngix:/etc/nginx/conf.d
