@@ -1,0 +1,129 @@
+name: "build & deploy"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/**
+      - web/**
+      - .github/workflows/**
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AWS_REGION: ap-northeast-1
+  ECS_CLUSTER: webserver
+  API_ECR_REPOSITORY: apiserver
+  API_ECS_SERVICE: apiserver
+  API_CONTAINER_NAME: apiserver
+  API_TASK_DEFINITION: apiserver-definition
+  WEB_ECR_REPOSITORY: frontend
+  WEB_ECS_SERVICE: frontend-service
+  WEB_CONTAINER_NAME: frontend
+  WEB_TASK_DEFINITION: frontend-definition
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 -t webserver/web:latest ./opt
+          #     docker build -t $ECR_REGISTRY/$WEB_ECR_REPOSITORY:$IMAGE_TAG ./webserver
+          docker tag webserver/web:latest 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest
+          docker push 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest
+          #     docker push $ECR_REGISTRY/$WEB_ECR_REPOSITORY:$IMAGE_TAG
+          echo "api_image=webserver/web:latest" >> $GITHUB_OUTPUT
+
+          docker build --platform linux/amd64 -t webserver/frontend:latest ./frontend
+          docker tag webserver/frontend:latest 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest
+          docker push 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest
+          echo "web_image=webserver/frontend:latest" >> $GITHUB_OUTPUT
+          #     echo "web_image=$ECR_REGISTRY/$WEB_ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Logout of Amazon ECR
+        if: always()
+        run: docker logout ${{ steps.login-ecr.outputs.registry }}
+
+      - name: Download task definition from Amazon ECS
+        run: |
+          aws ecs describe-task-definition --task-definition apiserver --region ${{ env.AWS_REGION }} --query taskDefinition > api-task-definition.json
+          aws ecs describe-task-definition --task-definition frontend --region ${{ env.AWS_REGION }} --query taskDefinition > web-task-definition.json
+          echo $(cat api-task-definition.json | jq 'del(
+                  .taskDefinitionArn,
+                  .requiresAttributes,
+                  .compatibilities,
+                  .revision,
+                  .status,
+                  .registeredAt,
+                  .registeredBy
+              )') > api-task-definition.json
+          echo $(cat web-task-definition.json | jq 'del(
+                  .taskDefinitionArn,
+                  .requiresAttributes,
+                  .compatibilities,
+                  .revision,
+                  .status,
+                  .registeredAt,
+                  .registeredBy
+              )') > web-task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS api task definition
+        id: api-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: api-task-definition.json
+          # container-name: ${{ env.API_CONTAINER_NAME }}
+          container-name: apiserver
+          image: 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest
+
+      - name: Fill in the new image ID in the Amazon ECS web task definition
+        id: web-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: web-task-definition.json
+          # container-name: ${{ env.WEB_CONTAINER_NAME }}
+          container-name: frontend
+          image: 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest
+
+      - name: Deploy Amazon ECS api task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.api-task-def.outputs.task-definition }}
+          service: ${{ env.API_ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # - name: Deploy Amazon ECS web task definition
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.web-task-def.outputs.task-definition }}
+      #     service: ${{ env.WEB_ECS_SERVICE }}
+      #     cluster: ${{ env.ECS_CLUSTER }}
+      #     wait-for-service-stability: true
