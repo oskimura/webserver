@@ -8,12 +8,12 @@ RUN apt-get update \
 
 # WORKDIR /usr/src/myapp
 
-WORKDIR /usr/src/
+WORKDIR /usr/src/myapp
 COPY . .
 #COPY ./practice-rust ./practice-rust
 #RUN ls
-COPY ./practice-rust .
-WORKDIR /usr/src/practice-rust
+#COPY ./practice-rust .
+WORKDIR /usr/src/myapp/practice-rust
 #COPY . .
 #RUN ls
 RUN rustup component add rustfmt
