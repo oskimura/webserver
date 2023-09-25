@@ -6,11 +6,10 @@ import './App.css'
 
 
 function App() {
-  const url = 'http://localhost/api/todo'
-  const [count, setCount] = useState(0)
+  //const [count, setCount] = useState(0)
 
   useEffect(() => {
-    axios.get(url).then((res) => {
+    axios.get('/api/todo').then((res) => {
       console.log(res.data)
     }).catch((err) => {console.log(err);});
   },[])
