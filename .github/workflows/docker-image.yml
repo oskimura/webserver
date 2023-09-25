@@ -54,14 +54,19 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build --platform linux/amd64 -t webserver/web:latest ./opt
+          docker build --platform linux/x86_64 -t webserver/ngix:latest ./frontend
+          docker tag webserver/ngix:latest 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/ngix:latest
+          docker push 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/ngix:latest
+          echo "web_image=webserver/ngix:latest" >> $GITHUB_OUTPUT
+
+          docker build --platform linux/x86_64 -t webserver/web:latest ./opt
           #     docker build -t $ECR_REGISTRY/$WEB_ECR_REPOSITORY:$IMAGE_TAG ./webserver
           docker tag webserver/web:latest 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest
           docker push 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest
           #     docker push $ECR_REGISTRY/$WEB_ECR_REPOSITORY:$IMAGE_TAG
           echo "api_image=webserver/web:latest" >> $GITHUB_OUTPUT
 
-          docker build --platform linux/amd64 -t webserver/frontend:latest ./frontend
+          docker build --platform linux/x86_64 -t webserver/frontend:latest ./frontend
           docker tag webserver/frontend:latest 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest
           docker push 218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest
           echo "web_image=webserver/frontend:latest" >> $GITHUB_OUTPUT

@@ -1,10 +1,4 @@
-FROM rust:1-slim-buster as builder
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    default-libmysqlclient-dev mariadb-client \
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/*
+FROM --platform=linux/x86_64 rust
 
 # WORKDIR /usr/src/myapp
 
@@ -16,19 +10,13 @@ COPY . .
 WORKDIR /usr/src/myapp/practice-rust
 #COPY . .
 #RUN ls
-RUN rustup component add rustfmt
-RUN cargo install --path .
+#RUN rustup component add rustfmt
+RUN cargo install --target=x86_64-unknown-linux-gnu --path .
 
-FROM debian:10.13-slim as stage
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    default-libmysqlclient-dev mariadb-client \
-    && apt-get -y clean \
-    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8080
-# COPY /usr/local/cargo/bin/practice-rust /usr/local/bin/practice-rust
-COPY --from=builder /usr/local/cargo/bin/practice-rust /usr/local/bin/practice-rust
+#COPY /usr/local/cargo/bin/practice-rust /usr/local/bin/practice-rust
+#COPY --from=builder /usr/local/cargo/bin/practice-rust /usr/local/bin/practice-rust
 
-CMD [ "practice-rust" ]
+CMD [ "/usr/local/cargo/bin/practice-rust" ]
+#CMD [ "cargo", "run", "-r"]
