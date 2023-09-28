@@ -2,6 +2,7 @@ version: "3"
 services:
   web:
     build: ./opt
+    #image: "218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/web:latest"
     container_name: "practice-rust"
     tty: true
     volumes:
@@ -10,16 +11,26 @@ services:
       - "8080:8080"
   frontend:
     build: ./frontend
+    #image: "218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/frontend:latest"
+    #environment:
+    #  WEB_HOST: web
     container_name: "frontend-rust"
     volumes:
       - ./frontend:/usr/src/app
     ports:
       - "3000:3000"
-    tty: true
+    #tty: true
 
   ngix:
+    image: nginx:alpine
+    #image: "218706752775.dkr.ecr.ap-northeast-1.amazonaws.com/webserver/ngix:latest"
     build: ./ngix
     ports:
       - "80:80"
     volumes:
       - ./ngix:/etc/nginx/conf.d
+    #environment:
+    #  WEB_HOST: web
+    #  FRONTEND_HOST: frontend
+
+    
