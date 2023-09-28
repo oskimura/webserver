@@ -8,3 +8,8 @@ edition = "2021"
 [dependencies]
 actix-web="4"
 serde = { version = "1.0.188", features = ["derive"] }
+nom = "7.1.3"
+strum = "0.25.0"
+strum_macros = "0.25.2"
+rust-crypto = "*"
+md5 = "0.7.0"
