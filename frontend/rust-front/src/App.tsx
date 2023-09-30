@@ -7,7 +7,7 @@ import './App.css'
 function App() {
   //const [count, setCount] = useState(0)
   useEffect(() => {
-    axios.get('/api/todo').then((res) => {
+    axios.get('/api/test').then((res) => {
       console.log(res.data)
     }).catch((err) => {console.log(err);});
   },[])
