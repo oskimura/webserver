@@ -14,7 +14,7 @@ strum = "0.25.0"
 strum_macros = "0.25.2"
 rust-crypto = "*"
 md5 = "0.7.0"
-sqlparser = "*"
+sqlparser = { version = "*", features = ["visitor"] }
 clap = { version = "4.4.6", features = ["derive"] }
 serde_json = "1.0.107"
 env_logger = { version = "0.10.0", features = [] }
