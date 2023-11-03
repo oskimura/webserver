@@ -2,11 +2,12 @@ mod parser;
 
 use actix_web::{test, get, App, HttpServer, Responder, HttpResponse, post, web};
 use serde::{Deserialize, Serialize};
-use crate::parser::{convert_select_statement, parse_select, traverse_select_statement};
+use crate::parser::{replace_column};
 use actix_rt::System;
 use serde_json::json;
 use actix_web::dev::Service;
 use actix_web::middleware::Logger;
+
 
 #[derive(Debug,Clone,PartialEq, Deserialize,Serialize)]
 struct SqlParameter {
@@ -19,6 +20,7 @@ struct Todo {
     content: String,
     checked: bool,
 }
+
 #[get("/api/test")]
 async fn test_index() -> impl Responder {
     HttpResponse::Ok().json(Todo {
@@ -31,9 +33,10 @@ async fn test_index() -> impl Responder {
 #[post("/api/parse")]
 async fn parse(req_body: web::Json<SqlParameter>) -> impl Responder {
     let sql = String::from(&req_body.sql);
-    match parse_select(&String::from(sql)) {
-        Ok((_, ast)) =>
-            HttpResponse::Ok().body(traverse_select_statement(convert_select_statement(&ast))),
+
+    match replace_column(sql.as_str()) {
+        Ok(res) => {
+            HttpResponse::Ok().body(res.iter().map(|s|s.to_string()).collect::<Vec<String>>().concat())},
         Err(e) => HttpResponse::Ok().body(e.to_string())
     }
 }
